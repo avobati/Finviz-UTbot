@@ -1,6 +1,6 @@
 ﻿import Link from "next/link";
-import { getLatestSignals } from "../../lib/db";
-import { buildRecommendations } from "../../lib/recommendations";
+import { getLatestSignals } from "../../../lib/db";
+import { buildSellRecommendations } from "../../../lib/sell-recommendations";
 
 export const dynamic = "force-dynamic";
 
@@ -25,40 +25,40 @@ function f01(v: number): string {
   return v.toFixed(2);
 }
 
-export default async function RecommendationPage() {
+export default async function SellRecommendationPage() {
   const signals = await getLatestSignals(10000, "weekly");
-  const recommendations = buildRecommendations(signals, 120, 35);
+  const recommendations = buildSellRecommendations(signals, 120, 35);
   const top5 = recommendations.slice(0, 5);
 
-  const buyRows = signals.filter((s) => String(s.signal || "").toUpperCase() === "BUY");
-  const completeBuyRows = buyRows.filter((s) => s.price != null && s.signal_price != null && s.bars_ago != null);
-  const coverage = buyRows.length ? (completeBuyRows.length / buyRows.length) * 100 : 0;
+  const sellRows = signals.filter((s) => String(s.signal || "").toUpperCase() === "SELL");
+  const completeSellRows = sellRows.filter((s) => s.price != null && s.signal_price != null && s.bars_ago != null);
+  const coverage = sellRows.length ? (completeSellRows.length / sellRows.length) * 100 : 0;
   const inferredRows = recommendations.filter((r) => r.data_quality === "inferred").length;
 
   return (
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">AllTickers Multi-Factor Recommendations</h1>
-          <p className="sub">BUY-only ranking from weighted factors with data-quality safeguards.</p>
+          <h1 className="title">AllTickers SELL Recommendations</h1>
+          <p className="sub">Separate SELL-only ranking with independent multi-factor scoring.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Link className="meta" href="/">Scanner Table</Link>
-          <Link className="meta" href="/recommendations/sell">SELL Rank</Link>
+          <Link className="meta" href="/recommendations">BUY Rank</Link>
         </div>
       </section>
 
       <section className="kpis">
         <div className="kpi">
-          <div className="label">Rows Ranked</div>
+          <div className="label">SELL Rows Ranked</div>
           <div className="value">{recommendations.length}</div>
         </div>
         <div className="kpi">
           <div className="label">Top Score</div>
-          <div className="value" style={{ color: "var(--buy)" }}>{top5[0]?.score?.toFixed(2) ?? "-"}</div>
+          <div className="value" style={{ color: "var(--sell)" }}>{top5[0]?.score?.toFixed(2) ?? "-"}</div>
         </div>
         <div className="kpi">
-          <div className="label">BUY Data Coverage</div>
+          <div className="label">SELL Data Coverage</div>
           <div className="value">{coverage.toFixed(1)}%</div>
         </div>
         <div className="kpi">
@@ -71,7 +71,7 @@ export default async function RecommendationPage() {
         <table>
           <thead>
             <tr>
-              <th colSpan={10}>Top 5 Recommendations</th>
+              <th colSpan={10}>Top 5 SELL Recommendations</th>
             </tr>
             <tr>
               <th>Rank</th>
@@ -109,7 +109,7 @@ export default async function RecommendationPage() {
         <table>
           <thead>
             <tr>
-              <th colSpan={15}>Full Multi-Factor Rank</th>
+              <th colSpan={15}>Full SELL Multi-Factor Rank</th>
             </tr>
             <tr>
               <th>Rank</th>
@@ -118,7 +118,7 @@ export default async function RecommendationPage() {
               <th>Score</th>
               <th>Quality</th>
               <th>Recency</th>
-              <th>Momentum</th>
+              <th>Downside</th>
               <th>Entry</th>
               <th>Freshness</th>
               <th>Market Q</th>
@@ -138,7 +138,7 @@ export default async function RecommendationPage() {
                 <td>{r.score.toFixed(2)}</td>
                 <td>{r.data_quality}</td>
                 <td>{f01(r.recency_factor)}</td>
-                <td>{f01(r.momentum_factor)}</td>
+                <td>{f01(r.downside_momentum_factor)}</td>
                 <td>{f01(r.entry_factor)}</td>
                 <td>{f01(r.freshness_factor)}</td>
                 <td>{f01(r.market_factor)}</td>

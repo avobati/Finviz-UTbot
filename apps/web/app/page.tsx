@@ -53,7 +53,8 @@ export default async function Home() {
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div className="meta">Build {commit.slice(0, 7)}</div>
-          <Link className="meta" href="/recommendations">Open Full Recommendation Rank</Link>
+          <Link className="meta" href="/recommendations">Open BUY Rank</Link>
+          <Link className="meta" href="/recommendations/sell">Open SELL Rank</Link>
         </div>
       </section>
 
