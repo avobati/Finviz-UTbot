@@ -30,12 +30,17 @@ export default async function RecommendationPage() {
   const recommendations = buildRecommendations(signals, 120, 35);
   const top5 = recommendations.slice(0, 5);
 
+  const buyRows = signals.filter((s) => String(s.signal || "").toUpperCase() === "BUY");
+  const completeBuyRows = buyRows.filter((s) => s.price != null && s.signal_price != null && s.bars_ago != null);
+  const coverage = buyRows.length ? (completeBuyRows.length / buyRows.length) * 100 : 0;
+  const inferredRows = recommendations.filter((r) => r.data_quality === "inferred").length;
+
   return (
     <main className="container">
       <section className="hero">
         <div>
           <h1 className="title">AllTickers Multi-Factor Recommendations</h1>
-          <p className="sub">BUY-only ranking from weighted factors: recency, momentum, entry, freshness, market quality.</p>
+          <p className="sub">BUY-only ranking from weighted factors with data-quality safeguards.</p>
         </div>
         <div className="meta">
           <Link href="/">Scanner Table</Link>
@@ -52,12 +57,12 @@ export default async function RecommendationPage() {
           <div className="value" style={{ color: "var(--buy)" }}>{top5[0]?.score?.toFixed(2) ?? "-"}</div>
         </div>
         <div className="kpi">
-          <div className="label">Selection</div>
-          <div className="value">Top 5</div>
+          <div className="label">BUY Data Coverage</div>
+          <div className="value">{coverage.toFixed(1)}%</div>
         </div>
         <div className="kpi">
-          <div className="label">Model</div>
-          <div className="value">Multi-Factor</div>
+          <div className="label">Inferred in Rank</div>
+          <div className="value">{inferredRows}</div>
         </div>
       </section>
 
@@ -65,13 +70,14 @@ export default async function RecommendationPage() {
         <table>
           <thead>
             <tr>
-              <th colSpan={9}>Top 5 Recommendations</th>
+              <th colSpan={10}>Top 5 Recommendations</th>
             </tr>
             <tr>
               <th>Rank</th>
               <th>Symbol</th>
               <th>Name</th>
               <th>Score</th>
+              <th>Quality</th>
               <th>Candles Ago</th>
               <th>% Change</th>
               <th>Signal Price</th>
@@ -86,6 +92,7 @@ export default async function RecommendationPage() {
                 <td>{shortSymbol(r.symbol)}</td>
                 <td>{r.symbol_name || shortSymbol(r.symbol)}</td>
                 <td>{r.score.toFixed(2)}</td>
+                <td>{r.data_quality}</td>
                 <td>{r.candles_ago}</td>
                 <td>{fPct(r.pct_change)}</td>
                 <td>{f2(r.signal_price)}</td>
@@ -101,13 +108,14 @@ export default async function RecommendationPage() {
         <table>
           <thead>
             <tr>
-              <th colSpan={14}>Full Multi-Factor Rank</th>
+              <th colSpan={15}>Full Multi-Factor Rank</th>
             </tr>
             <tr>
               <th>Rank</th>
               <th>Symbol</th>
               <th>Market</th>
               <th>Score</th>
+              <th>Quality</th>
               <th>Recency</th>
               <th>Momentum</th>
               <th>Entry</th>
@@ -127,6 +135,7 @@ export default async function RecommendationPage() {
                 <td>{shortSymbol(r.symbol)}</td>
                 <td>{r.market}</td>
                 <td>{r.score.toFixed(2)}</td>
+                <td>{r.data_quality}</td>
                 <td>{f01(r.recency_factor)}</td>
                 <td>{f01(r.momentum_factor)}</td>
                 <td>{f01(r.entry_factor)}</td>

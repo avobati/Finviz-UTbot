@@ -8,6 +8,7 @@
   signal_price: number | string | null;
   bars_ago: number | null;
   ts: string;
+  data_quality?: "complete" | "inferred" | "missing";
 };
 
 export type Recommendation = {
@@ -26,6 +27,8 @@ export type Recommendation = {
   entry_factor: number;
   freshness_factor: number;
   market_factor: number;
+  quality_factor: number;
+  data_quality: "complete" | "inferred" | "missing";
   score: number;
   ranking: number;
   ts: string;
@@ -54,13 +57,11 @@ function recencyFactor(candlesAgo: number): number {
 }
 
 function momentumFactor(pctChange: number): number {
-  // Saturating momentum score in [0,1].
   const x = pctChange * 10;
   return clamp01(1 / (1 + Math.exp(-x)));
 }
 
 function entryFactor(pctChange: number): number {
-  // Prefer names still close to trigger price (better risk/reward execution).
   return clamp01(1 - Math.min(Math.abs(pctChange) / 0.25, 1));
 }
 
@@ -83,24 +84,33 @@ function marketFactor(market: string): number {
   return 0.65;
 }
 
+function dataQualityFactor(q: "complete" | "inferred" | "missing"): number {
+  if (q === "complete") return 1;
+  if (q === "inferred") return 0.8;
+  return 0.4;
+}
+
 function weightedScore(parts: {
   recency: number;
   momentum: number;
   entry: number;
   freshness: number;
   market: number;
+  quality: number;
 }): number {
-  const wRecency = 0.3;
-  const wMomentum = 0.25;
-  const wEntry = 0.2;
-  const wFreshness = 0.15;
-  const wMarket = 0.1;
+  const wRecency = 0.27;
+  const wMomentum = 0.23;
+  const wEntry = 0.18;
+  const wFreshness = 0.12;
+  const wMarket = 0.08;
+  const wQuality = 0.12;
   const raw =
     parts.recency * wRecency +
     parts.momentum * wMomentum +
     parts.entry * wEntry +
     parts.freshness * wFreshness +
-    parts.market * wMarket;
+    parts.market * wMarket +
+    parts.quality * wQuality;
   return Math.round(raw * 10000) / 100;
 }
 
@@ -118,13 +128,15 @@ export function buildRecommendations(signals: SignalInput[], topK = 100, minScor
 
     const change = currentPrice - signalPrice;
     const pct = change / signalPrice;
+    const quality = row.data_quality || "complete";
 
     const recency = recencyFactor(candles);
     const momentum = momentumFactor(pct);
     const entry = entryFactor(pct);
     const fresh = freshnessFactor(row.ts);
     const mkt = marketFactor(row.market);
-    const score = weightedScore({ recency, momentum, entry, freshness: fresh, market: mkt });
+    const qf = dataQualityFactor(quality);
+    const score = weightedScore({ recency, momentum, entry, freshness: fresh, market: mkt, quality: qf });
     if (score < minScore) continue;
 
     out.push({
@@ -143,6 +155,8 @@ export function buildRecommendations(signals: SignalInput[], topK = 100, minScor
       entry_factor: entry,
       freshness_factor: fresh,
       market_factor: mkt,
+      quality_factor: qf,
+      data_quality: quality,
       score,
       ranking: 0,
       ts: row.ts,
@@ -151,6 +165,7 @@ export function buildRecommendations(signals: SignalInput[], topK = 100, minScor
 
   out.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
+    if (b.quality_factor !== a.quality_factor) return b.quality_factor - a.quality_factor;
     if (b.momentum_factor !== a.momentum_factor) return b.momentum_factor - a.momentum_factor;
     if (a.candles_ago !== b.candles_ago) return a.candles_ago - b.candles_ago;
     return a.symbol.localeCompare(b.symbol);

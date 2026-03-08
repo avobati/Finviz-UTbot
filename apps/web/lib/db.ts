@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+﻿import { Pool } from "pg";
 import universe from "../data/universe.json";
 import symbolMeta from "../data/symbol_meta.json";
 import manualBackfill from "../data/manual_backfill.json";
@@ -13,8 +13,10 @@ type SignalRow = {
   signal_price: string | number | null;
   bars_ago: number | null;
   ts: string;
+  data_quality: "complete" | "inferred" | "missing";
 };
 
+type BaseSignalRow = Omit<SignalRow, "symbol_name" | "market" | "data_quality">;
 type UniverseFile = { symbols?: string[] };
 type MetaEntry = { name?: string; market?: string };
 type BackfillEntry = {
@@ -60,7 +62,52 @@ function loadUniverse(): string[] {
   return out;
 }
 
-function applyBackfill(symbol: string, timeframe: string, row: Omit<SignalRow, "symbol_name" | "market">): Omit<SignalRow, "symbol_name" | "market"> {
+function toFiniteNumber(v: string | number | null): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function timeframeDays(tf: string): number {
+  const t = String(tf || "").trim().toLowerCase();
+  if (t === "daily") return 1;
+  if (t === "monthly") return 30;
+  return 7;
+}
+
+function inferMissingFields(row: BaseSignalRow, allowBarsFromTs: boolean): BaseSignalRow {
+  let price = toFiniteNumber(row.price);
+  let signalPrice = toFiniteNumber(row.signal_price);
+  let barsAgo = row.bars_ago;
+
+  if (price == null && signalPrice != null) price = signalPrice;
+  if (signalPrice == null && price != null) signalPrice = price;
+
+  if ((barsAgo == null || barsAgo < 0) && allowBarsFromTs) {
+    const tsMs = Date.parse(row.ts);
+    if (Number.isFinite(tsMs) && tsMs > Date.parse("2000-01-01T00:00:00.000Z")) {
+      const ageDays = Math.max(0, (Date.now() - tsMs) / 86400000);
+      barsAgo = Math.round(ageDays / timeframeDays(row.timeframe));
+    }
+  }
+
+  return {
+    ...row,
+    price,
+    signal_price: signalPrice,
+    bars_ago: barsAgo ?? null,
+  };
+}
+
+function classifyDataQuality(before: BaseSignalRow, after: BaseSignalRow): "complete" | "inferred" | "missing" {
+  const beforeComplete = before.price != null && before.signal_price != null && before.bars_ago != null;
+  const afterComplete = after.price != null && after.signal_price != null && after.bars_ago != null;
+  if (beforeComplete) return "complete";
+  if (afterComplete) return "inferred";
+  return "missing";
+}
+
+function applyBackfill(symbol: string, timeframe: string, row: BaseSignalRow): BaseSignalRow {
   const b = backfill[symbol];
   if (!b) return row;
   if ((b.timeframe || timeframe).toLowerCase() !== row.timeframe.toLowerCase()) return row;
@@ -77,7 +124,7 @@ function applyBackfill(symbol: string, timeframe: string, row: Omit<SignalRow, "
   };
 }
 
-function backfillOnly(symbol: string, timeframe: string): Omit<SignalRow, "symbol_name" | "market"> {
+function backfillOnly(symbol: string, timeframe: string): BaseSignalRow {
   const b = backfill[symbol];
   if (!b || (b.timeframe || timeframe).toLowerCase() !== timeframe.toLowerCase()) {
     return {
@@ -107,10 +154,16 @@ export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Pro
   const cap = Math.max(1, limit);
 
   if (!pool) {
-    return universeSymbols.slice(0, cap).map((symbol) => ({
-      ...backfillOnly(symbol, timeframe),
-      ...metaFor(symbol),
-    }));
+    return universeSymbols.slice(0, cap).map((symbol) => {
+      const m = metaFor(symbol);
+      const raw = backfillOnly(symbol, timeframe);
+      const inferred = inferMissingFields(raw, false);
+      return {
+        ...inferred,
+        data_quality: classifyDataQuality(raw, inferred),
+        ...m,
+      };
+    });
   }
 
   const sql = `
@@ -122,15 +175,20 @@ export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Pro
   `;
 
   const { rows } = await pool.query(sql, [timeframe]);
-  const latest = new Map<string, Omit<SignalRow, "symbol_name" | "market">>();
-  for (const r of rows as Omit<SignalRow, "symbol_name" | "market">[]) {
+  const latest = new Map<string, BaseSignalRow>();
+  for (const r of rows as BaseSignalRow[]) {
     latest.set(String(r.symbol).toUpperCase(), r);
   }
 
   return universeSymbols.slice(0, cap).map((symbol) => {
     const m = metaFor(symbol);
     const row = latest.get(symbol);
-    if (row) return { ...applyBackfill(symbol, timeframe, row), ...m };
-    return { ...backfillOnly(symbol, timeframe), ...m };
+    const raw = row ? applyBackfill(symbol, timeframe, row) : backfillOnly(symbol, timeframe);
+    const inferred = inferMissingFields(raw, Boolean(row));
+    return {
+      ...inferred,
+      data_quality: classifyDataQuality(raw, inferred),
+      ...m,
+    };
   });
 }

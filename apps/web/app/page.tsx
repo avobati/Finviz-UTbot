@@ -39,6 +39,11 @@ export default async function Home() {
   const sellCount = signals.filter((s) => s.signal === "SELL").length;
   const neutralCount = signals.length - buyCount - sellCount;
 
+  const completeBuyRows = signals.filter(
+    (s) => String(s.signal || "").toUpperCase() === "BUY" && s.price != null && s.signal_price != null && s.bars_ago != null
+  ).length;
+  const buyCoverage = buyCount ? (completeBuyRows / buyCount) * 100 : 0;
+
   return (
     <main className="container">
       <section className="hero">
@@ -66,8 +71,8 @@ export default async function Home() {
           <div className="value" style={{ color: "var(--sell)" }}>{sellCount}</div>
         </div>
         <div className="kpi">
-          <div className="label">NEUTRAL</div>
-          <div className="value" style={{ color: "var(--neutral)" }}>{neutralCount}</div>
+          <div className="label">BUY Coverage</div>
+          <div className="value">{buyCoverage.toFixed(1)}%</div>
         </div>
       </section>
 
@@ -84,7 +89,7 @@ export default async function Home() {
                 <span className="badge buy">{r.score.toFixed(2)}</span>
               </div>
               <div className="rec-strip-name" title={r.symbol_name}>{r.symbol_name || shortSymbol(r.symbol)}</div>
-              <div className="rec-strip-metrics">{r.market} | {r.candles_ago} bars | {fPct(r.pct_change)}</div>
+              <div className="rec-strip-metrics">{r.market} | {r.candles_ago} bars | {fPct(r.pct_change)} | {r.data_quality}</div>
               <a className="tv-link" href={tvChartUrl(r.symbol)} target="_blank" rel="noreferrer">Open chart</a>
             </article>
           ))}
