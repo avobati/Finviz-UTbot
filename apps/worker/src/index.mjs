@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runUtScan } from "core";
@@ -30,6 +30,8 @@ try {
   let failures = 0;
 
   for (const symbol of selected.symbols) {
+    const scanTs = new Date().toISOString();
+
     try {
       const res = await runUtScan({ symbol, timeframe });
       await upsertSignal({
@@ -39,12 +41,12 @@ try {
         price: res.price,
         signalPrice: res.signalPrice,
         barsAgo: res.barsAgo,
-        ts: res.ts,
+        // Always stamp with the actual scan run time for freshness/ranking reliability.
+        ts: scanTs,
         runId: run.id
       });
     } catch (err) {
       failures += 1;
-      const ts = new Date().toISOString();
       await upsertSignal({
         symbol,
         timeframe,
@@ -52,7 +54,7 @@ try {
         price: null,
         signalPrice: null,
         barsAgo: null,
-        ts,
+        ts: scanTs,
         runId: run.id
       });
       console.error(`scan-failed symbol=${symbol} err=${String(err)}`);
