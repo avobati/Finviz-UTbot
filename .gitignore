@@ -5,3 +5,5 @@ dist
 .env.local
 pnpm-lock.yaml
 __pycache__/
+/scripts/.cache/
+/scripts/out/

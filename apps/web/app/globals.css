@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #f4f1ea;
   --panel: #fffdf8;
   --text: #1f1b16;
@@ -153,6 +153,47 @@ tr:hover td {
   text-decoration-color: var(--accent);
 }
 
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rec-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.rec-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec-card-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.rec-name {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rec-score {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.rec-reason {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
 @media (max-width: 900px) {
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -161,6 +202,16 @@ tr:hover td {
   .hero {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .rec-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .rec-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -197,4 +248,63 @@ th input {
   white-space: nowrap;
 }
 
+.rec-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
 
+.rec-strip-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.rec-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+}
+
+.rec-strip-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff9ef;
+}
+
+.rec-strip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rec-strip-name {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-strip-metrics {
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+@media (max-width: 1100px) {
+  .rec-strip-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .rec-strip-grid {
+    grid-template-columns: 1fr;
+  }
+}
