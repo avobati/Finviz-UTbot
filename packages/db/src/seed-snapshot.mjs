@@ -39,11 +39,29 @@ try {
   );
   const runId = run.rows[0].id;
 
-  for (const row of rows) {
+  const chunkSize = 500;
+  for (let start = 0; start < rows.length; start += chunkSize) {
+    const chunk = rows.slice(start, start + chunkSize);
+    const values = [];
+    const placeholders = chunk.map((row, index) => {
+      const offset = index * 8;
+      values.push(
+        row.symbol,
+        row.timeframe || timeframe,
+        row.signal || "NEUTRAL",
+        row.price ?? null,
+        row.signal_price ?? null,
+        row.bars_ago ?? null,
+        row.ts || runTs,
+        runId
+      );
+      return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`;
+    });
+
     await client.query(
       `
         insert into signals(symbol, timeframe, signal, price, signal_price, bars_ago, ts, run_id)
-        values ($1, $2, $3, $4, $5, $6, $7, $8)
+        values ${placeholders.join(",")}
         on conflict (symbol, timeframe, ts)
         do update set
           signal = excluded.signal,
@@ -52,16 +70,7 @@ try {
           bars_ago = excluded.bars_ago,
           run_id = excluded.run_id
       `,
-      [
-        row.symbol,
-        row.timeframe || timeframe,
-        row.signal || "NEUTRAL",
-        row.price ?? null,
-        row.signal_price ?? null,
-        row.bars_ago ?? null,
-        row.ts || runTs,
-        runId,
-      ]
+      values
     );
   }
 
