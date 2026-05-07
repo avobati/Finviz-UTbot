@@ -2,6 +2,7 @@
 import universe from "../data/universe.json";
 import symbolMeta from "../data/symbol_meta.json";
 import manualBackfill from "../data/manual_backfill.json";
+import latestSignals from "../data/latest_signals.json";
 
 type SignalRow = {
   symbol: string;
@@ -26,6 +27,7 @@ type BackfillEntry = {
   signal_price?: string | number | null;
   bars_ago?: number | null;
 };
+type LatestSignalsFile = { items?: BaseSignalRow[] };
 
 const rawDatabaseUrl = (process.env.DATABASE_URL || "").trim();
 const hasPlaceholderDbUrl = /user:pass@host/.test(rawDatabaseUrl);
@@ -34,6 +36,11 @@ const pool = useNoDbMode ? null : new Pool({ connectionString: rawDatabaseUrl })
 
 const meta = symbolMeta as Record<string, MetaEntry>;
 const backfill = manualBackfill as Record<string, BackfillEntry>;
+const snapshotRows = (latestSignals as LatestSignalsFile).items || [];
+const snapshot = new Map<string, BaseSignalRow>();
+for (const row of snapshotRows) {
+  snapshot.set(`${String(row.symbol).toUpperCase()}|${String(row.timeframe || "weekly").toLowerCase()}`, row);
+}
 
 function metaFor(symbol: string): { symbol_name: string; market: string } {
   const entry = meta[symbol] || {};
@@ -149,14 +156,33 @@ function backfillOnly(symbol: string, timeframe: string): BaseSignalRow {
   };
 }
 
-export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Promise<SignalRow[]> {
+function priorityRank(signal: string): number {
+  const value = String(signal || "").toUpperCase();
+  if (value === "BUY") return 0;
+  if (value === "SELL") return 1;
+  return 2;
+}
+
+function applyDisplayLimit(rows: SignalRow[], limit: number): SignalRow[] {
+  if (!Number.isFinite(limit) || limit <= 0 || rows.length <= limit) return rows;
+  return [...rows]
+    .sort((a, b) => {
+      const bySignal = priorityRank(a.signal) - priorityRank(b.signal);
+      if (bySignal !== 0) return bySignal;
+      return a.symbol.localeCompare(b.symbol);
+    })
+    .slice(0, limit);
+}
+
+export async function getLatestSignals(limit = 0, timeframe = "weekly"): Promise<SignalRow[]> {
   const universeSymbols = loadUniverse();
-  const cap = Math.max(1, limit);
+  const cap = Number.isFinite(limit) && limit > 0 ? limit : universeSymbols.length;
 
   if (!pool) {
-    return universeSymbols.slice(0, cap).map((symbol) => {
+    const rows = universeSymbols.map((symbol) => {
       const m = metaFor(symbol);
-      const raw = backfillOnly(symbol, timeframe);
+      const snap = snapshot.get(`${symbol}|${timeframe.toLowerCase()}`);
+      const raw = snap ? applyBackfill(symbol, timeframe, snap) : backfillOnly(symbol, timeframe);
       const inferred = inferMissingFields(raw, false);
       return {
         ...inferred,
@@ -164,6 +190,7 @@ export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Pro
         ...m,
       };
     });
+    return applyDisplayLimit(rows, cap);
   }
 
   const sql = `
@@ -174,13 +201,13 @@ export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Pro
     order by s.symbol, s.timeframe, s.ts desc
   `;
 
-  const { rows } = await pool.query(sql, [timeframe]);
+  const result = await pool.query(sql, [timeframe]);
   const latest = new Map<string, BaseSignalRow>();
-  for (const r of rows as BaseSignalRow[]) {
+  for (const r of result.rows as BaseSignalRow[]) {
     latest.set(String(r.symbol).toUpperCase(), r);
   }
 
-  return universeSymbols.slice(0, cap).map((symbol) => {
+  const displayRows = universeSymbols.map((symbol) => {
     const m = metaFor(symbol);
     const row = latest.get(symbol);
     const raw = row ? applyBackfill(symbol, timeframe, row) : backfillOnly(symbol, timeframe);
@@ -191,4 +218,5 @@ export async function getLatestSignals(limit = 10000, timeframe = "weekly"): Pro
       ...m,
     };
   });
+  return applyDisplayLimit(displayRows, cap);
 }

@@ -31,7 +31,7 @@ function fPct(v: number): string {
 }
 
 export default async function Home() {
-  const signals = (await getLatestSignals(10000, "weekly")) as Signal[];
+  const signals = (await getLatestSignals(0, "weekly")) as Signal[];
   const recommendations = buildRecommendations(signals, 5, 35);
   const commit = process.env.VERCEL_GIT_COMMIT_SHA || "local";
 
@@ -48,8 +48,8 @@ export default async function Home() {
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">AllTickers UT Scanner</h1>
-          <p className="sub">Weekly scanner + automatic multi-factor recommendations.</p>
+          <h1 className="title">Finviz UTbot</h1>
+          <p className="sub">Finviz ticker universe + weekly UT recommendations.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div className="meta">Build {commit.slice(0, 7)}</div>
@@ -60,7 +60,7 @@ export default async function Home() {
 
       <section className="kpis">
         <div className="kpi">
-          <div className="label">Rows Shown</div>
+          <div className="label">Records Shown</div>
           <div className="value">{signals.length}</div>
         </div>
         <div className="kpi">

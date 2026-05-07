@@ -26,7 +26,7 @@ function f01(v: number): string {
 }
 
 export default async function RecommendationPage() {
-  const signals = await getLatestSignals(10000, "weekly");
+  const signals = await getLatestSignals(0, "weekly");
   const recommendations = buildRecommendations(signals, 120, 35);
   const top5 = recommendations.slice(0, 5);
 
@@ -39,7 +39,7 @@ export default async function RecommendationPage() {
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">AllTickers Multi-Factor Recommendations</h1>
+          <h1 className="title">Finviz UTbot BUY Recommendations</h1>
           <p className="sub">BUY-only ranking from weighted factors with data-quality safeguards.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

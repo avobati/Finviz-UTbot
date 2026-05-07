@@ -1,11 +1,14 @@
 {
-  "name": "ut-vercel-scanner-blueprint",
+  "name": "finviz-utbot",
   "private": true,
   "version": "0.1.0",
   "scripts": {
     "web": "pnpm --filter web dev",
     "worker": "pnpm --filter worker start",
     "gen:groups": "node scripts/generate-groups.mjs",
+    "update:signals": "python scripts/update-signals-snapshot.py",
+    "db:migrate": "pnpm --filter db migrate",
+    "db:seed": "pnpm --filter db seed:snapshot",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {

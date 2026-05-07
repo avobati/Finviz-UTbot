@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const timeframe = searchParams.get("timeframe") || "weekly";
-  const limit = Number(searchParams.get("limit") || "10000");
+  const limit = Number(searchParams.get("limit") || "0");
   const topK = Number(searchParams.get("topK") || "100");
   const minScore = Number(searchParams.get("minScore") || "35");
 

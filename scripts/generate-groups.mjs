@@ -12,7 +12,7 @@ function toTvSymbol(input) {
   if (!s) return "";
   if (s.includes(":")) return s;
   if (s.endsWith("USDT")) return `BINANCE:${s}`;
-  return `NASDAQ:${s}`;
+  return s;
 }
 
 const raw = fs.readFileSync(tickersPath, "utf8");
