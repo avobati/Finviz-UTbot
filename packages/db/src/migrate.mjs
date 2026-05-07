@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const schemaPath = path.join(__dirname, "..", "schema.sql");
 const sql = fs.readFileSync(schemaPath, "utf8");
 
-const client = new Client({ connectionString: dbUrl });
+const client = new Client({ connectionString: dbUrl.replace(/([?&]sslmode=)require\b/i, "$1verify-full") });
 await client.connect();
 try {
   await client.query(sql);

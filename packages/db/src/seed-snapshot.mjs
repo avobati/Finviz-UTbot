@@ -24,7 +24,7 @@ if (rows.length === 0) {
 const timeframe = snapshot.timeframe || rows[0]?.timeframe || "weekly";
 const groupId = 0;
 const runTs = snapshot.generated_at || new Date().toISOString();
-const client = new Client({ connectionString: dbUrl });
+const client = new Client({ connectionString: dbUrl.replace(/([?&]sslmode=)require\b/i, "$1verify-full") });
 
 await client.connect();
 try {

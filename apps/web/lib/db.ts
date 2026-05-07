@@ -32,7 +32,12 @@ type LatestSignalsFile = { items?: BaseSignalRow[] };
 const rawDatabaseUrl = (process.env.DATABASE_URL || "").trim();
 const hasPlaceholderDbUrl = /user:pass@host/.test(rawDatabaseUrl);
 const useNoDbMode = !rawDatabaseUrl || hasPlaceholderDbUrl;
-const pool = useNoDbMode ? null : new Pool({ connectionString: rawDatabaseUrl });
+
+function normalizeDatabaseUrl(url: string): string {
+  return url.replace(/([?&]sslmode=)require\b/i, "$1verify-full");
+}
+
+const pool = useNoDbMode ? null : new Pool({ connectionString: normalizeDatabaseUrl(rawDatabaseUrl) });
 
 const meta = symbolMeta as Record<string, MetaEntry>;
 const backfill = manualBackfill as Record<string, BackfillEntry>;
