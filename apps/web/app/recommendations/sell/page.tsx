@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { getLatestSignals } from "../../../lib/db";
 import { buildSellRecommendations } from "../../../lib/sell-recommendations";
 
@@ -39,7 +39,7 @@ export default async function SellRecommendationPage() {
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">Finviz UTbot SELL Recommendations</h1>
+          <h1 className="title">Finviz UTbot - Stocks and ETF SELL Recommendations</h1>
           <p className="sub">Separate SELL-only ranking with independent multi-factor scoring.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

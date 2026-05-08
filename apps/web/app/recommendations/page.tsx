@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { getLatestSignals } from "../../lib/db";
 import { buildRecommendations } from "../../lib/recommendations";
 
@@ -39,7 +39,7 @@ export default async function RecommendationPage() {
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">Finviz UTbot BUY Recommendations</h1>
+          <h1 className="title">Finviz UTbot - Stocks and ETF BUY Recommendations</h1>
           <p className="sub">BUY-only ranking from weighted factors with data-quality safeguards.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

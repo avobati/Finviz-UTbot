@@ -1,4 +1,4 @@
-# Finviz UTbot (Vercel + Worker + DB)
+# Finviz UTbot - Stocks and ETF (Vercel + Worker + DB)
 
 This app is copied from `avobati/Weeklytop5` and keeps the original scanner untouched.
 

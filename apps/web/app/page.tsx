@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { getLatestSignals } from "../lib/db";
 import { buildRecommendations } from "../lib/recommendations";
 import SignalsTable from "./components/signals-table";
@@ -48,8 +48,8 @@ export default async function Home() {
     <main className="container">
       <section className="hero">
         <div>
-          <h1 className="title">Finviz UTbot</h1>
-          <p className="sub">Finviz ticker universe + weekly UT recommendations.</p>
+          <h1 className="title">Finviz UTbot - Stocks and ETF</h1>
+          <p className="sub">Finviz stocks and ETF universe + weekly UT recommendations.</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div className="meta">Build {commit.slice(0, 7)}</div>
